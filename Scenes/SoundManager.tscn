@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dduwrw2wijps1"]
+
+[ext_resource type="Script" uid="uid://cowe0ljie5834" path="res://Scripts/SoundManager.gd" id="1_eh0l7"]
+
+[node name="SoundManager" type="Node" unique_id=125459613]
+script = ExtResource("1_eh0l7")
+
+[node name="MusicPlayer" type="AudioStreamPlayer2D" parent="." unique_id=2132675581]
+
+[node name="SFXPlayer" type="AudioStreamPlayer2D" parent="." unique_id=107883545]

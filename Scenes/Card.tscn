@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://cxdaj6kvtvm77"]
+
+[ext_resource type="Script" uid="uid://ddhyebq226736" path="res://Scripts/Card.gd" id="1_pnb5n"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kudhx"]
+size = Vector2(130, 190)
+
+[node name="Card" type="Node2D" unique_id=1633114843]
+script = ExtResource("1_pnb5n")
+rank = 8
+
+[node name="ArtSprite" type="Sprite2D" parent="." unique_id=1748726129]
+
+[node name="RankLabel" type="Label" parent="." unique_id=354212020]
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_font_sizes/font_size = 60
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SuitLabel" type="Label" parent="." unique_id=1564818219]
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ClickArea" type="Area2D" parent="." unique_id=1012066563]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea" unique_id=1524197926]
+position = Vector2(65, 95)
+shape = SubResource("RectangleShape2D_kudhx")

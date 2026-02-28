@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://c67wcvqg8rutg"]
+
+[ext_resource type="Script" uid="uid://bnhuj3fg2t46p" path="res://Scripts/PlayerWidget.gd" id="1_3xm46"]
+
+[node name="PlayerWidget" type="Control" unique_id=1022472705]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_3xm46")
+
+[node name="Icon" type="ColorRect" parent="." unique_id=2048326869]
+layout_mode = 0
+offset_left = 75.0
+offset_right = 125.0
+offset_bottom = 50.0
+color = Color(0, 1, 1, 1)
+
+[node name="NameLabel" type="Label" parent="." unique_id=1181803550]
+layout_mode = 0
+offset_top = 60.0
+offset_right = 40.0
+offset_bottom = 83.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="." unique_id=1854290471]
+layout_mode = 0
+offset_top = 85.0
+offset_right = 40.0
+offset_bottom = 108.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HandContainer" type="Node2D" parent="." unique_id=1321484356]
+position = Vector2(100, 40)

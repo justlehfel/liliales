@@ -1,0 +1,155 @@
+[gd_scene format=3 uid="uid://vjkniwbdxqvg"]
+
+[ext_resource type="Script" uid="uid://bo5quv1b50tqk" path="res://Scripts/GameManager.gd" id="1_iukft"]
+[ext_resource type="Material" uid="uid://dl1qrivr8a4h2" path="res://Resources/RoyalGold.tres" id="1_kldst"]
+[ext_resource type="Script" uid="uid://djsnqlcwrjaja" path="res://Scripts/BackgroundFix.gd" id="2_b2bpf"]
+[ext_resource type="PackedScene" uid="uid://c67wcvqg8rutg" path="res://Scenes/PlayerWidget.tscn" id="2_j5yw3"]
+[ext_resource type="Script" uid="uid://bqsahf32y8frg" path="res://Scripts/ConfirmButton.gd" id="3_b2bpf"]
+
+[sub_resource type="Environment" id="Environment_b2bpf"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kldst"]
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.84313726, 0, 1)
+
+[node name="Game" type="Node2D" unique_id=1969247964]
+
+[node name="Background" type="ColorRect" parent="." unique_id=197897247]
+material = ExtResource("1_kldst")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_b2bpf")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1679587252]
+environment = SubResource("Environment_b2bpf")
+
+[node name="CardContainer" type="Node2D" parent="." unique_id=1716716641]
+
+[node name="TrickCenter" type="Marker2D" parent="." unique_id=1549815733]
+position = Vector2(960, 540)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=241344001]
+
+[node name="DebugLabel" type="Label" parent="UI" unique_id=1217368111]
+offset_left = 20.0
+offset_top = 120.0
+offset_right = 60.0
+offset_bottom = 143.0
+
+[node name="ConfirmButton" type="Button" parent="UI" unique_id=2017608463]
+visible = false
+offset_left = 1600.0
+offset_top = 900.0
+offset_right = 1800.0
+offset_bottom = 980.0
+text = "CONFIRM"
+script = ExtResource("3_b2bpf")
+
+[node name="PlayerTop" parent="UI" unique_id=1022472705 instance=ExtResource("2_j5yw3")]
+offset_left = 856.0
+offset_top = 37.0
+offset_right = 856.0
+offset_bottom = 37.0
+
+[node name="PlayerLeft" parent="UI" unique_id=578517800 instance=ExtResource("2_j5yw3")]
+offset_left = 80.0
+offset_top = 458.0
+offset_right = 80.0
+offset_bottom = 458.0
+
+[node name="PlayerRight" parent="UI" unique_id=2048209750 instance=ExtResource("2_j5yw3")]
+offset_left = 1621.0
+offset_top = 473.0
+offset_right = 1621.0
+offset_bottom = 473.0
+
+[node name="MyStatsBox" type="Panel" parent="UI" unique_id=1706439366]
+offset_left = 50.0
+offset_top = 900.0
+offset_right = 350.0
+offset_bottom = 1050.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_kldst")
+
+[node name="Name" type="Label" parent="UI/MyStatsBox" unique_id=1522510602]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 13.0
+offset_right = 147.0
+offset_bottom = 81.0
+theme_override_font_sizes/font_size = 26
+
+[node name="Score" type="Label" parent="UI/MyStatsBox" unique_id=431850480]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 54.0
+offset_right = 136.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 26
+
+[node name="Tricks" type="Label" parent="UI/MyStatsBox" unique_id=2030054707]
+layout_mode = 0
+offset_left = 21.0
+offset_top = 98.0
+offset_right = 125.0
+offset_bottom = 161.0
+theme_override_font_sizes/font_size = 26
+
+[node name="RoundInfoBox" type="Panel" parent="UI" unique_id=1934188982]
+offset_left = 1570.0
+offset_top = 50.0
+offset_right = 1870.0
+offset_bottom = 170.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_kldst")
+
+[node name="RoundLabel" type="Label" parent="UI/RoundInfoBox" unique_id=1559399002]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.067
+anchor_bottom = 0.192
+offset_left = 67.0
+offset_top = 17.0
+offset_right = 199.5
+offset_bottom = 41.980003
+theme_override_font_sizes/font_size = 27
+
+[node name="SuitContainer" type="HBoxContainer" parent="UI/RoundInfoBox" unique_id=201625562]
+layout_mode = 0
+offset_left = 47.0
+offset_top = 67.0
+offset_right = 81.0
+offset_bottom = 100.0
+
+[node name="MessageBox" type="Panel" parent="UI" unique_id=1506306752]
+offset_left = 660.0
+offset_top = 150.0
+offset_right = 1260.0
+offset_bottom = 230.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_kldst")
+
+[node name="Label" type="Label" parent="UI/MessageBox" unique_id=839909723]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GameManager" type="Node" parent="." unique_id=1290020665]
+script = ExtResource("1_iukft")

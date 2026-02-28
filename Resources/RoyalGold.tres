@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dl1qrivr8a4h2"]
+
+[ext_resource type="Shader" uid="uid://b6vghcxqlji63" path="res://Resources/RoyalGold.gdshader" id="1_j2tne"]
+
+[resource]
+shader = ExtResource("1_j2tne")
+shader_parameter/base_color = Color(0.2, 0.05, 0.05, 1)
+shader_parameter/gold_color = Color(1, 0.84, 0, 1)
+shader_parameter/sheen_color = Color(1, 1, 1, 0.5)
+shader_parameter/speed = 0.05
+shader_parameter/pattern_scale = 5.0
+shader_parameter/sheen_width = 0.1
+shader_parameter/sheen_softness = 0.2
