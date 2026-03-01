@@ -28,6 +28,8 @@ var turn_idx = 0
 var trick_pile = [] 
 var cards_to_pick = 1
 var current_draft_step = 0
+var impatient_clicks = 0
+var is_exit_popup_open = false
 
 enum Phase { DRAFTING, PLAYING, RESOLVING }
 var current_phase = Phase.DRAFTING
@@ -52,7 +54,14 @@ func _ready():
 	start_round_setup()
 
 func _input(event):
+	if is_exit_popup_open: return
+
 	if event is InputEventKey and event.pressed and not event.echo:
+		# --- MENU ÉCHAP ---
+		if event.keycode == KEY_ESCAPE:
+			_show_exit_confirmation()
+			return
+
 		if event.keycode == KEY_UP:
 			cheat_seq += 1
 			if cheat_seq >= 3:
@@ -61,23 +70,79 @@ func _input(event):
 		else:
 			cheat_seq = 0
 
+func _show_exit_confirmation():
+	is_exit_popup_open = true
+	var ui = $"../UI"
+	var overlay = Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ui.add_child(overlay)
+	
+	var dim = ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.7)
+	overlay.add_child(dim)
+	
+	var panel = Panel.new()
+	panel.custom_minimum_size = Vector2(600, 300)
+	panel.position = (Vector2(1920, 1080) - panel.custom_minimum_size) / 2.0
+	panel.pivot_offset = panel.custom_minimum_size / 2.0
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.1, 0.0, 0.02, 0.95)
+	sb.border_color = Color("FFD700")
+	sb.set_border_width_all(4)
+	sb.set_corner_radius_all(20)
+	panel.add_theme_stylebox_override("panel", sb)
+	overlay.add_child(panel)
+	
+	var lbl = Label.new()
+	lbl.text = "Abandon the game?\n(Back to Menu)"
+	lbl.add_theme_font_size_override("font_size", 38)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.position = Vector2(0, 50)
+	lbl.custom_minimum_size = Vector2(600, 100)
+	panel.add_child(lbl)
+	
+	var hbox = HBoxContainer.new()
+	hbox.position = Vector2(0, 180)
+	hbox.custom_minimum_size = Vector2(600, 80)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 50)
+	panel.add_child(hbox)
+	
+	var btn_yes = Button.new(); btn_yes.text = "YES"; btn_yes.custom_minimum_size = Vector2(180, 60)
+	var btn_no = Button.new(); btn_no.text = "NO"; btn_no.custom_minimum_size = Vector2(180, 60)
+	
+	for b in [btn_yes, btn_no]:
+		var bsb = StyleBoxFlat.new()
+		bsb.bg_color = Color(0.2, 0.2, 0.2, 1.0); bsb.set_corner_radius_all(10); bsb.set_border_width_all(2); bsb.border_color = Color.WHITE
+		b.add_theme_stylebox_override("normal", bsb)
+		hbox.add_child(b)
+	
+	btn_no.pressed.connect(func():
+		is_exit_popup_open = false
+		overlay.queue_free()
+	)
+	
+	btn_yes.pressed.connect(func():
+		get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+	)
+	
+	panel.scale = Vector2.ZERO
+	create_tween().tween_property(panel, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 func _activate_cheat():
 	round_num = 5
-	
 	while available_suits.size() > 0:
 		active_suits.append(available_suits.pop_back())
-		
 	for p in players:
 		p.hand.clear()
 		p.draft_hand.clear()
-		
 	for c in trick_pile: 
 		if is_instance_valid(c.node): c.node.queue_free()
 	trick_pile.clear()
-	
 	for c in card_container.get_children(): 
 		if is_instance_valid(c): c.queue_free()
-		
 	confirm_btn.visible = false
 	start_round_setup()
 
@@ -139,7 +204,11 @@ func _reset_game_logic():
 	for p in players:
 		p.score = 50
 		p.tricks_won = 0
-	if Achievements: Achievements.stats["games"] += 1
+	
+	if AchievementManager: 
+		AchievementManager.stats["games"] += 1
+		AchievementManager.save_data()
+
 	var colors = ["Red", "Blue", "Green"]
 	var powers = ["Black", "White"]
 	var first = colors.pick_random()
@@ -154,6 +223,7 @@ func _reset_game_logic():
 
 func start_round_setup():
 	current_trick_dominant_suit = "" 
+	impatient_clicks = 0
 	if round_num > 1 and available_suits.size() > 0:
 		active_suits.append(available_suits.pop_back())
 	deck.clear()
@@ -246,17 +316,13 @@ func _render_human_draft_hand(animate_in: bool = false):
 		ui_message_label.text = "Auto-Drafting..."
 		for d in human.draft_hand:
 			human.hand.append(d)
-			if Achievements and d.rank == 12: Achievements.unlock("HIGH_HOPES")
-			if Achievements and d.rank == 1: Achievements.unlock("LOW_PROFILE")
 		human.draft_hand.clear()
 		_process_bot_drafts()
 		var last_pack = players[NUM_PLAYERS-1].draft_hand
 		for i in range(NUM_PLAYERS-1, 0, -1): players[i].draft_hand = players[i-1].draft_hand
 		players[0].draft_hand = last_pack
 		current_draft_step += 1
-		
 		await get_tree().create_timer(0.3).timeout
-		
 		if current_draft_step >= 3: _start_play_phase()
 		else: _render_human_draft_hand(true)
 		return 
@@ -292,7 +358,6 @@ func _render_human_draft_hand(animate_in: bool = false):
 		var ty = start_y + (row * spacing_y) - 50
 		
 		card.set_meta("draft_scale", draft_scale)
-		
 		if animate_in:
 			card.position = Vector2(1920/2, 1080/2) 
 			card.scale = Vector2(0.0, 0.0)
@@ -312,6 +377,8 @@ func _render_human_draft_hand(animate_in: bool = false):
 		card.set_meta("data", data)
 
 func _on_card_clicked(card_node):
+	if is_exit_popup_open: return
+
 	if current_phase == Phase.DRAFTING:
 		if card_node.selected:
 			card_node.selected = false
@@ -333,7 +400,13 @@ func _on_card_clicked(card_node):
 			confirm_btn.visible = false
 		
 	elif current_phase == Phase.PLAYING:
-		if turn_idx != 0: return 
+		if turn_idx != 0: 
+			impatient_clicks += 1
+			if impatient_clicks >= 10:
+				if AchievementManager: AchievementManager.unlock("IMPATIENT")
+			return 
+		
+		impatient_clicks = 0
 		var data = card_node.get_meta("data")
 		
 		if trick_pile.size() > 0:
@@ -346,6 +419,12 @@ func _on_card_clicked(card_node):
 					t.tween_property(card_node, "position:x", card_node.target_pos.x, 0.05)
 					return 
 		
+		if AchievementManager and data.rank == LILY_RANK:
+			var is_leading = true
+			for i in range(1, NUM_PLAYERS):
+				if players[i].score > players[0].score: is_leading = false
+			if is_leading: AchievementManager.unlock("SABOTAGE")
+
 		_play_card(0, card_node, data)
 
 func _on_confirm_pressed():
@@ -366,9 +445,6 @@ func _process_confirm_logic():
 		if c.selected: 
 			selected_data.append(d)
 			c.queue_free() 
-			if Achievements:
-				if d.rank == 12: Achievements.unlock("HIGH_HOPES")
-				if d.rank == 1: Achievements.unlock("LOW_PROFILE")
 		else: 
 			remaining_data.append(d)
 			remaining_nodes.append(c)
@@ -376,12 +452,6 @@ func _process_confirm_logic():
 	human.hand.append_array(selected_data)
 	human.draft_hand = remaining_data
 	
-	if Achievements and selected_data.size() >= 3:
-		var suit_check = selected_data[0].suit
-		var all_match = true
-		for c in selected_data: if c.suit != suit_check: all_match = false
-		if all_match: Achievements.unlock("DRAFT_MASTER")
-		
 	for i in range(remaining_nodes.size()):
 		var c = remaining_nodes[i]
 		c.is_drafting = false 
@@ -546,9 +616,6 @@ func _play_card(p_idx, card_node, data):
 	if sound_manager:
 		if data.suit in ["Black", "White"]: sound_manager.play_sfx("impact")
 		else: sound_manager.play_sfx("whoosh")
-	
-	if p_idx == 0 and data.suit in ["Black", "White"] and Achievements: 
-		Achievements.unlock("FIRST_SPARK")
 
 	var card_spacing = 100
 	var pile_size = trick_pile.size()
@@ -575,7 +642,6 @@ func _play_card(p_idx, card_node, data):
 				st.tween_property(card_node, "position", Vector2(target_x, target_y), 0.15).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 				st.parallel().tween_property(card_node, "scale", Vector2(1.0, 1.0), 0.15)
 				st.parallel().tween_callback(func(): card_node.rotation = 0.0).set_delay(0.15)
-				
 				st.tween_callback(func():
 					for p_other in trick_pile:
 						if p_other.node != card_node and p_other.node.has_method("apply_shockwave"):
@@ -620,21 +686,16 @@ func _check_turn():
 func _bot_turn():
 	var bot = players[turn_idx]
 	if bot.hand.size() == 0: return
-	
 	var lead_data = trick_pile[0].data if trick_pile.size() > 0 else null
 	var valid = []
-	
 	for c in bot.hand:
 		if lead_data and c.rank == LILY_RANK and lead_data.suit not in ["Black", "White"] and c.suit != lead_data.suit:
-			if bot.hand.size() > 1:
-				continue 
+			if bot.hand.size() > 1: continue 
 		valid.append(c)
-		
 	if valid.is_empty(): valid = bot.hand.duplicate() 
 	
 	var diff = Global.settings["DIFFICULTY"]
 	var pick = null
-	
 	if diff == "EASY":
 		pick = valid.pick_random()
 	else:
@@ -642,30 +703,24 @@ func _bot_turn():
 		var power_in_pile = false
 		var highest_in_suit = 0
 		var lead_suit = lead_data.suit if lead_data else ""
-		
 		for p in trick_pile:
 			if p.data.rank == LILY_RANK: lilies_in_pile += 1
 			if p.data.suit in ["Black", "White"]: power_in_pile = true
 			if lead_suit != "" and p.data.suit == lead_suit:
 				if p.data.rank > highest_in_suit: highest_in_suit = p.data.rank
-		
 		var safe_moves = []
 		var winning_moves = []
-		
 		for c in valid:
 			var will_win = false
 			if trick_pile.is_empty():
 				if c.rank < 8: safe_moves.append(c) 
 				else: winning_moves.append(c) 
 			else:
-				if c.suit in ["Black", "White"]:
-					will_win = true 
+				if c.suit in ["Black", "White"]: will_win = true 
 				elif c.suit == lead_suit and not power_in_pile:
 					if c.rank > highest_in_suit: will_win = true
-				
 				if will_win: winning_moves.append(c)
 				else: safe_moves.append(c)
-		
 		if lilies_in_pile > 0:
 			if safe_moves.size() > 0:
 				safe_moves.sort_custom(func(a,b): return a.rank > b.rank)
@@ -680,24 +735,19 @@ func _bot_turn():
 			else:
 				var lilies = []
 				for c in valid: if c.rank == LILY_RANK: lilies.append(c)
-				
 				if lilies.size() > 0: pick = lilies[0] 
 				else:
 					valid.sort_custom(func(a,b): return a.rank < b.rank)
 					pick = valid[0]
-				
 	if pick == null: pick = valid.pick_random()
-
 	var card = card_scene.instantiate()
 	card_container.add_child(card)
 	card.set_card_data(pick.suit, pick.rank)
 	card.is_face_up = true 
-	
 	var start_pos = Vector2(0,0)
 	if turn_idx == 1: start_pos = p_widget_left.position
 	elif turn_idx == 2: start_pos = p_widget_top.position
 	elif turn_idx == 3: start_pos = p_widget_right.position
-	
 	card.position = start_pos
 	_play_card(turn_idx, card, pick)
 
@@ -707,20 +757,24 @@ func _resolve_trick():
 	var winner = -1
 	var power_played = false
 	
+	var rank_1_played = false
+	var power_count = 0
+	
 	for p in trick_pile: 
-		if p.data.suit in ["Black", "White"]: power_played = true
+		if p.data.suit in ["Black", "White"]: 
+			power_played = true
+			power_count += 1
+		if p.data.rank == 1: rank_1_played = true
 	
 	for p in trick_pile:
 		var d = p.data
 		var is_candidate = false
-		
 		if power_played:
 			if d.suit in ["Black", "White"]:
 				if d.rank > best_rank: is_candidate = true
 		else:
 			if d.suit == lead:
 				if d.rank > best_rank: is_candidate = true
-		
 		if is_candidate:
 			best_rank = d.rank
 			winner = p.player
@@ -729,15 +783,28 @@ func _resolve_trick():
 	var lilies_count = 0
 	var lily_blaster = "" 
 	
+	var human_played_lily = false
 	for p in trick_pile: 
 		if p.data.rank == LILY_RANK: 
 			lilies_count += 1
+			if p.player == 0: human_played_lily = true
 			if lily_blaster == "": lily_blaster = players[p.player].name
 			
 	var points_delta = 3 - (lilies_count * 10)
 	players[winner].score += points_delta
 	ui_message_label.text = "%s Won the trick!" % players[winner].name
 	
+	# --- Trigger pour les achievements
+	if AchievementManager and winner == 0:
+		if best_rank == 1: AchievementManager.unlock("SNIPER")
+		if best_rank == 12 and rank_1_played: AchievementManager.unlock("OVERKILL")
+		if power_count >= 2 and trick_pile[winner].data.suit in ["Black", "White"]:
+			AchievementManager.unlock("POWER_TRIP")
+		if lilies_count >= 3: AchievementManager.unlock("STOMACH")
+	
+	if AchievementManager and winner != 0 and human_played_lily and lilies_count >= 2:
+		AchievementManager.unlock("TOXIC")
+
 	var popup = TrickPopup.new()
 	$"../UI".add_child(popup)
 	popup.play_anim(players[winner].name, points_delta, lily_blaster)
@@ -745,19 +812,12 @@ func _resolve_trick():
 	
 	current_trick_dominant_suit = ""
 	
-	if Achievements:
-		if winner == 0:
-			if lilies_count >= 1: Achievements.unlock("OUCH")
-			if players[0].tricks_won >= 5: Achievements.unlock("TRICKSTER")
-			if points_delta < 0: Achievements.unlock("TOXIC") 
-	
 	if sound_manager:
 		if lilies_count > 0: sound_manager.play_sfx("lilytrick")
 		elif winner == 0: sound_manager.play_sfx("wintrick")
 		else: sound_manager.play_sfx("loosetrick")
 
 	_update_all_ui()
-	
 	var dest = Vector2(960, 1200) 
 	if winner == 1: dest = p_widget_left.position
 	elif winner == 2: dest = p_widget_top.position
@@ -767,23 +827,21 @@ func _resolve_trick():
 		var t = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 		t.tween_property(p.node, "position", trick_center.position, 0.3)
 		t.parallel().tween_property(p.node, "scale", Vector2(0.8, 0.8), 0.3)
-		
 		t.chain().tween_property(p.node, "position", dest, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		t.parallel().tween_property(p.node, "scale", Vector2(0.1, 0.1), 0.4)
 		t.parallel().tween_property(p.node, "modulate:a", 0.0, 0.4)
 		t.parallel().tween_property(p.node, "rotation", PI * 2, 0.4)
 	
 	await get_tree().create_timer(0.7).timeout
-	
 	for p in trick_pile: p.node.queue_free()
 	trick_pile.clear()
 	
 	if players[0].hand.is_empty():
 		round_num += 1
 		if round_num > 5:
+			_check_end_game_achievements()
 			if Global.has_method("save_highscore"):
 				Global.save_highscore(players[0].score)
-				
 			current_phase = Phase.RESOLVING 
 			var podium_script = load("res://Scripts/PodiumCinematic.gd")
 			if podium_script:
@@ -798,3 +856,35 @@ func _resolve_trick():
 		current_phase = Phase.PLAYING
 		turn_idx = winner
 		_check_turn()
+
+func _check_end_game_achievements():
+	if not AchievementManager: return
+	var player_score = players[0].score
+	var player_tricks = players[0].tricks_won
+	var diff = Global.settings.get("DIFFICULTY", "NORMAL")
+	var sorted_players = players.duplicate()
+	sorted_players.sort_custom(func(a,b): return a.score > b.score)
+	var player_won = (sorted_players[0] == players[0])
+	var runner_up_score = sorted_players[1].score if sorted_players.size() > 1 else 0
+	if player_won:
+		AchievementManager.stats["wins"] += 1
+		AchievementManager.unlock("FIRST_BLOOD")
+		if AchievementManager.stats["wins"] >= 5: AchievementManager.unlock("APPRENTICE")
+		if AchievementManager.stats["wins"] >= 15: AchievementManager.unlock("ADEPT")
+		if AchievementManager.stats["wins"] >= 25: AchievementManager.unlock("LEGEND")
+		match diff:
+			"EASY": AchievementManager.unlock("DIFF_EASY")
+			"NORMAL": AchievementManager.unlock("DIFF_MED")
+			"HARD": AchievementManager.unlock("DIFF_HARD")
+			"IMPOSSIBLE": AchievementManager.unlock("DIFF_IMP")
+		if player_score <= 54: AchievementManager.unlock("CLOSE")
+		if player_score - runner_up_score == 1: AchievementManager.unlock("PHOTO")
+		if diff == "IMPOSSIBLE" and (player_score - runner_up_score >= 30): AchievementManager.unlock("APEX")
+	else: AchievementManager.unlock("HUMBLE")
+	if player_score >= 100: AchievementManager.unlock("CENTURION")
+	if player_score < 0: AchievementManager.unlock("ABYSS")
+	if player_score == 50 and player_tricks == 0: AchievementManager.unlock("NEUTRAL")
+	if player_tricks >= 5: AchievementManager.unlock("TRICKSTER")
+	if player_tricks >= 10: AchievementManager.unlock("SHARK")
+	if player_tricks >= 15: AchievementManager.unlock("DOMINATION")
+	AchievementManager.save_data()

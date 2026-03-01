@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://n7puu21cxatu"]
+
+[ext_resource type="Script" uid="uid://dj8hx674wvg0t" path="res://Scripts/RoyalGallery.gd" id="1_q636u"]
+
+[node name="RoyalGallery" type="Control" unique_id=125327946]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_q636u")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1992849519]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Background" unique_id=1452741618]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 40.0
+
+[node name="RoadmapArea" type="Control" parent="Background/HBoxContainer" unique_id=152080583]
+layout_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="Background/HBoxContainer/RoadmapArea" unique_id=761657606]
+layout_mode = 0
+offset_right = 4.0
+offset_bottom = 27.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Background/HBoxContainer/RoadmapArea" unique_id=1964791400]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Background/HBoxContainer" unique_id=1011452307]
+layout_mode = 2
+
+[node name="AchievementGrid" type="GridContainer" parent="Background/HBoxContainer/ScrollContainer" unique_id=171483383]
+layout_mode = 2
+columns = 2

@@ -11,22 +11,26 @@ config_version=5
 [application]
 
 config/name="Liliales V2"
-config/description="The official Liliales Game now compatible with most devices."
-config/version="2.0.0"
+config/description="The Official and Licensed Liliales Game ! :)"
+config/version="2.1.24"
 run/main_scene="uid://g5uc6usiem2t"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="Liliales"
 config/features=PackedStringArray("4.6", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="uid://bstw2o4m3ih0u"
+config/windows_native_icon="res://LilialesIcon.ico"
 
 [autoload]
 
 Global="*uid://bmfdkwm7yud15"
-Achievements="*uid://4a5axxa4o0m8"
+AchievementManager="*uid://4a5axxa4o0m8"
 
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [physics]
 

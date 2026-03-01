@@ -13,13 +13,13 @@ var title_label: Label
 var buttons: Array = []
 var active_overlay: Control = null
 var floating_whatsnew: Button
+var highscore_panel: Button 
 
 var how_to_page: int = 0
 var how_to_text: RichTextLabel
 var how_to_title: Label
 var htp_visuals: Control
 
-# Variable des paramètres
 var res_list = [
 	Vector2(1024, 768), Vector2(1280, 720), Vector2(1280, 1024), 
 	Vector2(1366, 768), Vector2(1440, 900), Vector2(1600, 900), 
@@ -56,6 +56,7 @@ func _ready():
 	_setup_version_text()
 	_setup_buttons()
 	_setup_whats_new_button()
+	_setup_highscore_display() 
 	_play_intro_animation()
 	
 	if Global.has_method("load_settings"):
@@ -103,17 +104,17 @@ func _setup_title():
 	title_label = Label.new()
 	title_label.text = "Liliales" 
 	title_label.add_theme_font_override("font", font)
-	title_label.add_theme_font_size_override("font_size", 102) 
-	title_label.add_theme_color_override("font_color", C_GOLD)
+	title_label.add_theme_font_size_override("font_size", 130) 
+	title_label.add_theme_color_override("font_color", Color(0.8, 0.6, 0.1)) 
 	title_label.add_theme_constant_override("outline_size", 12)
 	title_label.add_theme_color_override("font_outline_color", Color(0.05, 0.0, 0.0))
 	title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	title_label.add_theme_constant_override("shadow_offset_x", 0)
-	title_label.add_theme_constant_override("shadow_offset_y", 15)
+	title_label.add_theme_constant_override("shadow_offset_y", 10)
 	
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.custom_minimum_size = Vector2(1920, 200)
-	title_label.position = Vector2(0, 100)
+	title_label.position = Vector2(0, 10) 
 	title_label.pivot_offset = title_label.custom_minimum_size / 2.0 
 	
 	var sm = ShaderMaterial.new()
@@ -122,18 +123,23 @@ func _setup_title():
 	shader_type canvas_item;
 	void fragment() {
 		vec4 font_mask = texture(TEXTURE, UV);
-		float sweep = pow(sin(UV.x * 4.0 - UV.y * 2.0 - TIME * 2.5) * 0.5 + 0.5, 8.0);
-		vec3 glow = vec3(1.0, 0.9, 0.6) * sweep * 1.5;
+		float sweep = pow(sin(UV.x * 4.0 - UV.y * 2.0 - TIME * 1.5) * 0.5 + 0.5, 5.0);
+		float pulse = (sin(TIME * 2.0) + 1.0) * 0.5;
+		vec3 glow = vec3(0.5, 0.2, 0.0) * pulse + vec3(0.9, 0.7, 0.1) * sweep;
 		COLOR = vec4(COLOR.rgb + glow, COLOR.a * font_mask.a);
 	}
 	"""
 	sm.shader = sh
 	title_label.material = sm
 	add_child(title_label)
+	
+	var float_tween = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	float_tween.tween_property(title_label, "position:y", 25.0, 2.0)
+	float_tween.tween_property(title_label, "position:y", 10.0, 2.0)
 
 func _setup_version_text():
 	var v_label = Label.new()
-	v_label.text = "Version 2.02 Stable - Created by Lehfel"
+	v_label.text = "Version 2.1.24 Stable - Created by Lehfel"
 	var font = SystemFont.new()
 	font.font_names = PackedStringArray(FONT_BODY)
 	v_label.add_theme_font_override("font", font)
@@ -145,13 +151,13 @@ func _setup_version_text():
 	add_child(v_label)
 
 func _setup_buttons():
-	var menu_options = ["PLAY", "HOW TO PLAY", "SETTINGS", "CREDITS", "QUIT"]
+	var menu_options = ["PLAY", "HOW TO PLAY", "ACHIEVEMENTS", "SETTINGS", "CREDITS", "QUIT"]
 	var font = SystemFont.new()
 	font.font_names = PackedStringArray(FONT_BUTTONS)
 	font.font_weight = 800
 	
-	var start_y = 480.0
-	var btn_spacing = 100.0
+	var start_y = 480.0 
+	var btn_spacing = 90.0 
 	var btn_width = 400.0
 	var btn_height = 70.0
 	var center_x = (1920.0 - btn_width) / 2.0
@@ -262,12 +268,14 @@ func _play_intro_animation():
 	add_child(fader)
 	
 	var fade_tween = create_tween()
-	fade_tween.tween_property(fader, "modulate:a", 0.0, 1.0).set_trans(Tween.TRANS_CUBIC)
+	fade_tween.tween_property(fader, "modulate:a", 0.0, 0.8).set_trans(Tween.TRANS_CUBIC)
 	fade_tween.tween_callback(fader.queue_free)
 	
 	title_label.modulate.a = 0.0
 	floating_whatsnew.modulate.a = 0.0
 	floating_whatsnew.scale = Vector2.ZERO
+	highscore_panel.modulate.a = 0.0
+	highscore_panel.scale = Vector2.ZERO
 	
 	for btn in buttons:
 		btn.modulate.a = 0.0
@@ -280,6 +288,8 @@ func _play_intro_animation():
 	
 	t.tween_property(floating_whatsnew, "modulate:a", 1.0, 0.8).set_delay(1.0)
 	t.tween_property(floating_whatsnew, "scale", Vector2.ONE, 0.8).set_delay(1.0).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(highscore_panel, "modulate:a", 1.0, 0.8).set_delay(1.1)
+	t.tween_property(highscore_panel, "scale", Vector2.ONE, 0.8).set_delay(1.1).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	
 	for i in range(buttons.size()):
 		var btn = buttons[i]
@@ -313,12 +323,29 @@ func _on_btn_pressed(btn_name: String):
 			_open_overlay("HOW TO PLAY", Callable(self, "_build_how_to"))
 		"SETTINGS":
 			_open_overlay("SETTINGS", Callable(self, "_build_settings"))
+		"ACHIEVEMENTS":
+			_transition_to_scene("res://Scenes/RoyalGallery.tscn")
 		"CREDITS":
 			_open_overlay("CREDITS", Callable(self, "_build_credits"))
 		"WHATS_NEW":
 			_open_overlay("CHANGELOG", Callable(self, "_build_changelog"))
 		"QUIT":
 			get_tree().quit()
+
+func _transition_to_scene(scene_path: String):
+	for b in buttons: b.disabled = true
+	if floating_whatsnew: floating_whatsnew.disabled = true
+	
+	var fader = ColorRect.new()
+	fader.color = Color.BLACK
+	fader.modulate.a = 0.0
+	fader.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fader.z_index = 4000
+	add_child(fader)
+	
+	var t = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(fader, "modulate:a", 1.0, 0.6)
+	t.chain().tween_callback(func(): get_tree().change_scene_to_file(scene_path))
 
 func _trigger_play_cinematic():
 	for b in buttons: b.disabled = true
@@ -335,6 +362,7 @@ func _trigger_play_cinematic():
 	t.tween_property(title_label, "scale", Vector2(1.5, 1.5), 0.8)
 	t.tween_property(title_label, "modulate:a", 0.0, 0.8)
 	t.tween_property(floating_whatsnew, "position:y", -100, 0.6)
+	t.tween_property(highscore_panel, "position:x", -400, 0.6).set_trans(Tween.TRANS_BACK)
 	
 	for i in range(buttons.size()):
 		t.tween_property(buttons[i], "position:y", 1200, 0.6).set_delay(i * 0.05).set_trans(Tween.TRANS_BACK)
@@ -362,7 +390,7 @@ func _open_overlay(title_str: String, builder_func: Callable):
 	
 	var panel = Panel.new()
 	panel.custom_minimum_size = Vector2(1100, 750)
-	panel.position = Vector2((1920-1100)/2.0, (1080-750)/2.0)
+	panel.position = Vector2((1920 - 1100) / 2.0, (1080 - 750) / 2.0)
 	panel.pivot_offset = panel.custom_minimum_size / 2.0
 	
 	var sb = StyleBoxFlat.new()
@@ -405,7 +433,9 @@ func _open_overlay(title_str: String, builder_func: Callable):
 	btn_close.add_theme_font_size_override("font_size", 24)
 	var sb_c = StyleBoxFlat.new()
 	sb_c.bg_color = C_DARK_RED
-	sb_c.set_corner_radius_all(10); sb_c.set_border_width_all(2); sb_c.border_color = C_GOLD
+	sb_c.set_corner_radius_all(10)
+	sb_c.set_border_width_all(2)
+	sb_c.border_color = C_GOLD
 	btn_close.add_theme_stylebox_override("normal", sb_c)
 	btn_close.add_theme_stylebox_override("hover", sb_c)
 	btn_close.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
@@ -432,7 +462,8 @@ func _close_overlay():
 
 func _build_name_input(container: Control):
 	var f = SystemFont.new()
-	f.font_names = PackedStringArray(FONT_BODY); f.font_weight = 800
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 800
 	
 	var lbl = Label.new()
 	lbl.text = "Enter Your Name, Champion:"
@@ -471,19 +502,26 @@ func _build_name_input(container: Control):
 	var sb_btn = StyleBoxFlat.new()
 	sb_btn.bg_color = C_GOLD
 	sb_btn.set_corner_radius_all(15)
+	sb_btn.set_border_width_all(2)
+	sb_btn.border_color = Color.WHITE
 	start_btn.add_theme_stylebox_override("normal", sb_btn)
 	start_btn.add_theme_stylebox_override("hover", sb_btn)
 	start_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
-	start_btn.pressed.connect(func():
+	var on_start = func():
 		var final_name = input.text.strip_edges()
 		if final_name == "": final_name = "Player"
 		Global.settings["PLAYER_NAME"] = final_name
 		if Global.has_method("save_settings"): Global.save_settings()
 		_close_overlay()
 		_trigger_play_cinematic()
-	)
+	
+	start_btn.pressed.connect(on_start)
+	input.text_submitted.connect(func(_t): on_start.call())
+	
 	container.add_child(start_btn)
+	input.grab_focus()
+	input.select_all()
 
 func _build_how_to(container: Control):
 	how_to_page = 0
@@ -495,7 +533,8 @@ func _build_how_to(container: Control):
 	container.add_child(htp_visuals)
 	
 	var f = SystemFont.new()
-	f.font_names = PackedStringArray(FONT_BODY); f.font_weight = 800
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 800
 	
 	how_to_title = Label.new()
 	how_to_title.add_theme_font_override("font", f)
@@ -513,8 +552,11 @@ func _build_how_to(container: Control):
 	how_to_text.add_theme_font_size_override("normal_font_size", 24)
 	container.add_child(how_to_text)
 	
-	var btn_prev = Button.new(); btn_prev.text = "< PREV"
-	var btn_next = Button.new(); btn_next.text = "NEXT >"
+	var btn_prev = Button.new()
+	btn_prev.text = "< PREV"
+	
+	var btn_next = Button.new()
+	btn_next.text = "NEXT >"
 	
 	for b in [btn_prev, btn_next]:
 		b.custom_minimum_size = Vector2(150, 50)
@@ -537,8 +579,10 @@ func _build_how_to(container: Control):
 
 func _change_how_to_page(dir: int):
 	how_to_page += dir
-	if how_to_page < 0: how_to_page = HOW_TO_SLIDES.size() - 1
-	elif how_to_page >= HOW_TO_SLIDES.size(): how_to_page = 0
+	if how_to_page < 0: 
+		how_to_page = HOW_TO_SLIDES.size() - 1
+	elif how_to_page >= HOW_TO_SLIDES.size(): 
+		how_to_page = 0
 		
 	var t = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	t.tween_property(how_to_text, "modulate:a", 0.0, 0.15)
@@ -608,54 +652,73 @@ func _build_settings(container: Control):
 	scroll.add_child(vbox)
 	
 	var f = SystemFont.new()
-	f.font_names = PackedStringArray(FONT_BODY); f.font_weight = 700
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 700
 	
 	var create_row = func(title: String, control: Control):
 		var h = HBoxContainer.new()
-		var l = Label.new(); l.text = title; l.custom_minimum_size = Vector2(450, 50)
-		l.add_theme_font_override("font", f); l.add_theme_font_size_override("font_size", 28)
-		h.add_child(l); h.add_child(control)
+		var l = Label.new()
+		l.text = title
+		l.custom_minimum_size = Vector2(450, 50)
+		l.add_theme_font_override("font", f)
+		l.add_theme_font_size_override("font_size", 28)
+		h.add_child(l)
+		h.add_child(control)
 		vbox.add_child(h)
 	
 	var ob_res = OptionButton.new()
 	ob_res.custom_minimum_size = Vector2(400, 50)
-	for r in res_list: ob_res.add_item("%dx%d" % [r.x, r.y])
+	for r in res_list: 
+		ob_res.add_item("%dx%d" % [r.x, r.y])
 	ob_res.select(Global.settings.get("RES_INDEX", 6))
 	ob_res.item_selected.connect(func(idx): 
-		Global.settings["RES_INDEX"] = idx; Global.save_settings()
+		Global.settings["RES_INDEX"] = idx
+		if Global.has_method("save_settings"): Global.save_settings()
 		_apply_resolution(idx)
 	)
 	create_row.call("Resolution", ob_res)
-	
+
 	var ob_win = OptionButton.new()
 	ob_win.custom_minimum_size = Vector2(400, 50)
-	ob_win.add_item("Windowed"); ob_win.add_item("Fullscreen"); ob_win.add_item("Borderless")
+	ob_win.add_item("Windowed")
+	ob_win.add_item("Fullscreen")
+	ob_win.add_item("Borderless")
 	ob_win.select(Global.settings.get("MODE_INDEX", 0))
 	ob_win.item_selected.connect(func(idx): 
-		Global.settings["MODE_INDEX"] = idx; Global.save_settings()
+		Global.settings["MODE_INDEX"] = idx
+		if Global.has_method("save_settings"): Global.save_settings()
 		_apply_window_mode(idx)
 	)
 	create_row.call("Window Mode", ob_win)
 	
 	var ob_fps = OptionButton.new()
 	ob_fps.custom_minimum_size = Vector2(400, 50)
-	ob_fps.add_item("15 FPS"); ob_fps.add_item("30 FPS"); ob_fps.add_item("60 FPS")
-	ob_fps.add_item("120 FPS"); ob_fps.add_item("240 FPS"); ob_fps.add_item("Unlimited")
+	ob_fps.add_item("15 FPS")
+	ob_fps.add_item("30 FPS")
+	ob_fps.add_item("60 FPS")
+	ob_fps.add_item("120 FPS")
+	ob_fps.add_item("240 FPS")
+	ob_fps.add_item("Unlimited")
 	ob_fps.select(Global.settings.get("FPS_INDEX", 2))
 	ob_fps.item_selected.connect(func(idx): 
-		Global.settings["FPS_INDEX"] = idx; Global.save_settings()
+		Global.settings["FPS_INDEX"] = idx
+		if Global.has_method("save_settings"): Global.save_settings()
 		_apply_fps(idx)
 	)
 	create_row.call("Max FPS", ob_fps)
 	
 	var ob_diff = OptionButton.new()
 	ob_diff.custom_minimum_size = Vector2(400, 50)
-	ob_diff.add_item("EASY"); ob_diff.add_item("NORMAL"); ob_diff.add_item("HARD"); ob_diff.add_item("IMPOSSIBLE")
+	ob_diff.add_item("EASY")
+	ob_diff.add_item("NORMAL")
+	ob_diff.add_item("HARD")
+	ob_diff.add_item("IMPOSSIBLE")
 	var diff_map = {"EASY":0, "NORMAL":1, "HARD":2, "IMPOSSIBLE":3}
 	ob_diff.select(diff_map.get(Global.settings.get("DIFFICULTY", "NORMAL"), 1))
 	ob_diff.item_selected.connect(func(idx): 
 		var diffs = ["EASY", "NORMAL", "HARD", "IMPOSSIBLE"]
-		Global.settings["DIFFICULTY"] = diffs[idx]; Global.save_settings()
+		Global.settings["DIFFICULTY"] = diffs[idx]
+		if Global.has_method("save_settings"): Global.save_settings()
 	)
 	create_row.call("Bot Difficulty", ob_diff)
 
@@ -665,7 +728,8 @@ func _build_credits(container: Control):
 	r.custom_minimum_size = Vector2(1000, 500)
 	
 	var f = SystemFont.new()
-	f.font_names = PackedStringArray(FONT_BODY); f.font_weight = 700
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 700
 	r.add_theme_font_override("normal_font", f)
 	r.add_theme_font_size_override("normal_font_size", 28)
 	
@@ -673,7 +737,7 @@ func _build_credits(container: Control):
 	r.text += "[color=#AAAAAA]Original Idea by:[/color]\n[color=#FFFFFF]Wiliam Roger Keurantjes[/color]\n\n"
 	r.text += "[color=#AAAAAA]Art & Aesthetics by:[/color]\n[color=#FFFFFF]Émerik[/color]\n\n"
 	r.text += "[color=#AAAAAA]Edited and Directed by:[/color]\n[color=#FFD700]Lehfel[/color]\n\n"
-	r.text += "Thank you for playing.[/center]"
+	r.text += "Thank you for playing ![/center]"
 	
 	container.add_child(r)
 	r.position.y = 50
@@ -688,18 +752,164 @@ func _build_changelog(container: Control):
 	r.custom_minimum_size = Vector2(1000, 500)
 	
 	var f = SystemFont.new()
-	f.font_names = PackedStringArray(FONT_BODY); f.font_weight = 700
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 700
 	r.add_theme_font_override("normal_font", f)
 	r.add_theme_font_size_override("normal_font_size", 24)
 	
-	r.text = "[center][color=#FFD700]Update 2.02 - The Grand Master Polish[/color][/center]\n\n"
+	r.text = "[center][color=#FFD700]Update 2.1.24 - The Royal Gallery[/color][/center]\n\n"
 	r.text += "[ul]"
-	r.text += "Revamped Main Menu with Royal Shaders and Transitions.\n"
-	r.text += "Added Name Entry System and integrated Highscores.\n"
-	r.text += "How To Play now features live, animated visual demonstrations.\n"
-	r.text += "Jokers now gently shockwave cards out of the way on impact.\n"
-	r.text += "Lilies cast a purple glowing aura onto the numbers of infected tricks.\n"
-	r.text += "Added a massive, suspenseful Podium Cinematic at Round 5.\n"
+	r.text += "Launched Royal Gallery: A dedicated, animated scene for all achievements.\n"
+	r.text += "Procedural Iconography: Every achievement now has a unique, hand-drawn vector icon.\n"
+	r.text += "Interactive Roadmap: Added a high-juice progress bar with elastic animations.\n"
+	r.text += "UX Polish: Enter key support for name entry and Escape key quit confirmation.\n"
+	r.text += "Visual Overhaul: New molten gold shaders and fixed white-flicker transitions.\n"
+	r.text += "Added 'Impatient' achievement: Stop clicking your cards while waiting!\n"
+	r.text += "Technical Fixes: Resolved endgame crash and optimized database connectivity.\n"
+	r.text += "Secret Animation : Added the fullscreen highscore cinematic in main menu.\n"
+	r.text += "Display fix : Now strechable with other types of screens.\n"
 	r.text += "[/ul]"
 	
 	container.add_child(r)
+
+func _setup_highscore_display():
+	highscore_panel = Button.new()
+	highscore_panel.custom_minimum_size = Vector2(320, 70)
+	highscore_panel.position = Vector2(40, 40)
+	highscore_panel.pivot_offset = Vector2(160, 35)
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.1, 0.1, 0.1, 0.9)
+	sb.set_corner_radius_all(20)
+	sb.set_border_width_all(2)
+	sb.border_color = C_GOLD
+	sb.shadow_color = Color(1.0, 0.84, 0.0, 0.25)
+	sb.shadow_size = 12
+	
+	highscore_panel.add_theme_stylebox_override("normal", sb)
+	highscore_panel.add_theme_stylebox_override("hover", sb)
+	highscore_panel.add_theme_stylebox_override("pressed", sb)
+	highscore_panel.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	var f = SystemFont.new()
+	f.font_names = PackedStringArray(FONT_BODY)
+	f.font_weight = 800
+	
+	var lbl = Label.new()
+	lbl.text = "🏆 HIGHSCORE: " + str(Global.current_highscore) 
+	lbl.add_theme_font_override("font", f)
+	lbl.add_theme_font_size_override("font_size", 24)
+	lbl.add_theme_color_override("font_color", C_GOLD)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	highscore_panel.add_child(lbl)
+	
+	highscore_panel.pressed.connect(_reveal_highscore_cinematic)
+	add_child(highscore_panel)
+	
+	var t = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(highscore_panel, "position:y", 48.0, 1.5)
+	t.tween_property(highscore_panel, "position:y", 32.0, 1.5)
+
+func _reveal_highscore_cinematic():
+	var reveal = Control.new()
+	reveal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	reveal.z_index = 5000
+	add_child(reveal)
+	
+	var bg_dim = ColorRect.new()
+	bg_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_dim.color = Color(0, 0, 0, 0)
+	reveal.add_child(bg_dim)
+	
+	# Sous-texte du titre
+	var legacy_lbl = Label.new()
+	legacy_lbl.text = "YOUR LEGACY"
+	var f_legacy = SystemFont.new()
+	f_legacy.font_names = PackedStringArray(FONT_BODY)
+	f_legacy.font_weight = 800
+	legacy_lbl.add_theme_font_override("font", f_legacy)
+	legacy_lbl.add_theme_font_size_override("font_size", 48)
+	legacy_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	legacy_lbl.add_theme_constant_override("letter_spacing", 10)
+	legacy_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	legacy_lbl.position = Vector2(0, 100)
+	legacy_lbl.custom_minimum_size = Vector2(1920, 100)
+	legacy_lbl.modulate.a = 0.0
+	reveal.add_child(legacy_lbl)
+
+	# Score secret du main menu
+	var font = title_label.get_theme_font("font")
+	var display = Label.new()
+	display.text = str(Global.current_highscore)
+	display.add_theme_font_override("font", font)
+	display.add_theme_font_size_override("font_size", 280)
+	display.add_theme_color_override("font_color", C_GOLD)
+	display.add_theme_constant_override("outline_size", 20)
+	display.add_theme_color_override("font_outline_color", Color(0.1, 0.0, 0.0))
+	display.add_theme_color_override("font_shadow_color", Color(1.0, 0.5, 0.0, 0.5))
+	display.add_theme_constant_override("shadow_offset_y", 15)
+	display.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	display.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	display.set_anchors_preset(Control.PRESET_FULL_RECT)
+	
+	display.position.y = -50
+	display.scale = Vector2.ZERO
+	display.pivot_offset = Vector2(1920 / 2.0, 1080 / 2.0)
+	
+	var sm = ShaderMaterial.new()
+	var sh = Shader.new()
+	sh.code = title_label.material.shader.code
+	sm.shader = sh
+	display.material = sm
+	reveal.add_child(display)
+	
+	# Animation d'entrée
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(bg_dim, "color:a", 0.95, 0.6).set_trans(Tween.TRANS_CUBIC)
+	t.tween_property(legacy_lbl, "modulate:a", 1.0, 0.8).set_trans(Tween.TRANS_CUBIC).set_delay(0.3)
+	t.tween_property(legacy_lbl, "position:y", 130.0, 0.8).set_trans(Tween.TRANS_CUBIC).set_delay(0.3)
+	t.tween_property(display, "scale", Vector2.ONE, 1.2)
+	
+	var idle_t = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	idle_t.tween_property(display, "scale", Vector2(1.05, 1.05), 1.5)
+	idle_t.parallel().tween_property(display, "position:y", -70.0, 1.5)
+	idle_t.tween_property(display, "scale", Vector2(1.0, 1.0), 1.5)
+	idle_t.parallel().tween_property(display, "position:y", -50.0, 1.5)
+	
+	var btn_exit = Button.new()
+	btn_exit.text = "RETURN"
+	btn_exit.custom_minimum_size = Vector2(300, 80)
+	btn_exit.position = Vector2((1920 - 300) / 2.0, 950)
+	btn_exit.modulate.a = 0.0
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.1, 0.0, 0.02)
+	sb.set_corner_radius_all(20)
+	sb.set_border_width_all(3)
+	sb.border_color = C_GOLD
+	btn_exit.add_theme_stylebox_override("normal", sb)
+	btn_exit.add_theme_stylebox_override("hover", sb)
+	btn_exit.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	var btn_f = SystemFont.new()
+	btn_f.font_names = PackedStringArray(FONT_BUTTONS)
+	btn_f.font_weight = 800
+	btn_exit.add_theme_font_override("font", btn_f)
+	btn_exit.add_theme_font_size_override("font_size", 32)
+	
+	reveal.add_child(btn_exit)
+	
+	var t_btn = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t_btn.tween_property(btn_exit, "modulate:a", 1.0, 0.8).set_delay(0.8)
+	
+	btn_exit.pressed.connect(func():
+		if idle_t and idle_t.is_valid(): idle_t.kill()
+		var t_close = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		t_close.tween_property(display, "scale", Vector2.ZERO, 0.5)
+		t_close.tween_property(legacy_lbl, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_CUBIC)
+		t_close.tween_property(bg_dim, "color:a", 0.0, 0.5).set_trans(Tween.TRANS_CUBIC)
+		t_close.tween_property(btn_exit, "modulate:a", 0.0, 0.3)
+		t_close.chain().tween_callback(reveal.queue_free)
+)
